@@ -20,7 +20,9 @@ import AccountProfileDialog from './AccountProfileDialog.vue'
 import ChatWorkspace from './ChatWorkspace.vue'
 import ConnectAccountDialog from './ConnectAccountDialog.vue'
 import ConversationList from './ConversationList.vue'
+import DesktopConnectionDialog from './DesktopConnectionDialog.vue'
 import { useControlCenter } from './useControlCenter'
+import { currentControlApiUrl, isDesktopRuntime, saveControlApiUrl } from '@/api/runtime-config'
 
 const {
   accounts,
@@ -67,6 +69,9 @@ const deleteAccountId = shallowRef<string | null>(null)
 const deleteDialogAccount = computed(
   () => accounts.value.find((account) => account.id === deleteAccountId.value) ?? null,
 )
+const desktopSettingsOpen = shallowRef(false)
+const desktopSettingsBusy = shallowRef(false)
+const desktopControlApiUrl = currentControlApiUrl()
 
 const operatorTime = new Intl.DateTimeFormat('zh-CN', {
   hour: '2-digit',
@@ -147,6 +152,22 @@ async function handleRemoveAvatar(accountId: string): Promise<void> {
     // The composable exposes the user-facing error.
   }
 }
+
+function openDesktopSettings(): void {
+  desktopSettingsOpen.value = true
+}
+
+async function saveDesktopSettings(apiUrl: string): Promise<void> {
+  desktopSettingsBusy.value = true
+  try {
+    await saveControlApiUrl(apiUrl)
+    window.location.reload()
+  } catch (reason) {
+    showError(reason instanceof Error ? reason.message : '无法保存桌面端设置')
+  } finally {
+    desktopSettingsBusy.value = false
+  }
+}
 </script>
 
 <template>
@@ -165,7 +186,12 @@ async function handleRemoveAvatar(accountId: string): Promise<void> {
         <button class="nav-button" title="安全策略"><ShieldCheck :size="19" /></button>
       </nav>
       <div class="nav-footer">
-        <button class="nav-button" title="设置"><Settings2 :size="18" /></button>
+        <button
+          v-if="isDesktopRuntime"
+          class="nav-button"
+          title="桌面端连接设置"
+          @click="openDesktopSettings"
+        ><Settings2 :size="18" /></button>
         <span class="operator-avatar">OP</span>
       </div>
     </aside>
@@ -255,6 +281,14 @@ async function handleRemoveAvatar(accountId: string): Promise<void> {
       :busy="busy"
       @close="deleteDialogOpen = false"
       @confirm="handleDeleteAccount"
+    />
+
+    <DesktopConnectionDialog
+      :open="desktopSettingsOpen"
+      :api-url="desktopControlApiUrl"
+      :busy="desktopSettingsBusy"
+      @close="desktopSettingsOpen = false"
+      @save="saveDesktopSettings"
     />
 
     <div v-if="loading" class="loading-screen">

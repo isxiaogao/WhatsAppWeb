@@ -16,7 +16,10 @@
     "infra:status": "docker compose -f infra/evolution/docker-compose.yml ps",
     "infra:logs": "docker compose -f infra/evolution/docker-compose.yml logs -f evolution-api",
     "infra:smoke": "node scripts/evolution-health.mjs",
-    "media:smoke": "node scripts/media-storage-smoke.mjs"
+    "media:smoke": "node scripts/media-storage-smoke.mjs",
+    "desktop:dev": "npm run dev -w @cloud-wa/desktop",
+    "desktop:pack": "npm run build -w @cloud-wa/web && npm run pack -w @cloud-wa/desktop",
+    "desktop:dist": "npm run build -w @cloud-wa/web && npm run dist -w @cloud-wa/desktop"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

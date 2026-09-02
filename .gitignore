@@ -5,4 +5,10 @@ dist/
 *.tsbuildinfo
 apps/server/runtime/
 apps/server/coverage/
+apps/desktop/dist/
+apps/desktop/renderer/
+apps/desktop/release/
+.npm-cache/
+.electron-cache/
+.electron-builder-cache/
 .DS_Store

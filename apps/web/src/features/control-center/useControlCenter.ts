@@ -1,5 +1,6 @@
 import { computed, onMounted, onUnmounted, readonly, shallowRef, watch } from 'vue'
 import { controlCenterApi } from '@/api/control-center'
+import { controlApiUrl, normalizeControlEventUrls } from '@/api/runtime-config'
 import type { Account, ControlEvent, Conversation, Message } from '@/types'
 
 export function useControlCenter() {
@@ -190,9 +191,11 @@ export function useControlCenter() {
   }
 
   function openEventStream(): void {
-    eventSource = new EventSource('/api/events')
+    eventSource = new EventSource(controlApiUrl('/api/events'))
     eventSource.addEventListener('control', (event) => {
-      const payload = JSON.parse((event as MessageEvent<string>).data) as ControlEvent
+      const payload = normalizeControlEventUrls(
+        JSON.parse((event as MessageEvent<string>).data) as ControlEvent,
+      )
       if (payload.type === 'account.updated') upsertAccount(payload.data)
       if (payload.type === 'account.deleted') removeAccount(payload.data.id)
       if (payload.type === 'conversation.updated') upsertConversation(payload.data)

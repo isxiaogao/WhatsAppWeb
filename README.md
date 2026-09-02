@@ -25,6 +25,7 @@ Fastify Control API ───────────── PostgreSQL-backed Ev
 - `S3MediaStorage`：二进制媒体保存到 MinIO/S3；发送时由控制 API 通过 multipart 直接传给 Evolution，避免内部地址校验和签名参数被改写。
 - `infra/evolution/docker-compose.yml`：基于 `evoapicloud/evolution-api:v2.3.7` 构建可审计的兼容镜像，配套 PostgreSQL 16、Redis 7 与 MinIO。
 - `JsonStateStore`：保存中控账号与消息视图；Evolution 自身会话和密钥材料由其数据库/volume 保存。
+- `apps/desktop`：Electron 桌面客户端，复用 Vue 操作台并通过 HTTPS 连接既有控制服务。
 
 ## 为什么固定 v2.3.7
 
@@ -57,6 +58,18 @@ npm run dev
 4. 打开 `http://localhost:5273`，点击“添加 Evolution 实例”。二维码出现后，由账号持有人在手机 WhatsApp 的“已关联设备”中扫码。上线后即可真实收发文本、图片和 MP4 视频，并可在账号节点中更新头像或永久删除实例。
 
 控制 API 默认在 `http://localhost:4100`，Evolution 默认仅绑定本机 `127.0.0.1:8080`，MinIO API/控制台仅绑定 `127.0.0.1:9000/9001`。Evolution 容器通过 `http://host.docker.internal:4100` 回调中控；出站媒体由控制 API 直接 multipart 上传给 Evolution。
+
+## Electron 桌面端
+
+桌面端只封装操作台，不打包或启动 Fastify、Evolution、PostgreSQL、Redis、MinIO。生产环境应将这些服务部署在服务器或内网节点，桌面端通过 HTTPS 访问控制 API；这样桌面程序退出不会影响账号会话、Webhook 或消息接收。
+
+```text
+WA Control Fabric.exe ── HTTPS / SSE ──► Fastify Control API ──► Evolution + PostgreSQL + MinIO
+```
+
+首次启动时，桌面端默认连接本机 `http://127.0.0.1:4100`，适用于本机开发或同机部署。若控制服务部署在服务器上，在左侧底部的“桌面端连接设置”中填入服务端 HTTPS 根地址并保存，应用会自动重载。媒体、REST 请求和 SSE 都会使用该地址。
+
+桌面端使用受限的 `app://` 协议加载本地资源，并启用 sandbox、context isolation 和最小化 preload IPC；Renderer 不拥有 Node.js 或文件系统权限。发布到用户设备前仍应为 Fastify 加入 HTTPS、身份认证、RBAC 与 CORS allowlist。
 
 ## Webhook 安全
 
@@ -99,3 +112,7 @@ npm run infra:logs    # 查看 Evolution 日志
 npm run infra:smoke   # 验证 Evolution 健康状态
 npm run media:smoke   # 验证 MinIO 上传、读取、签名下载和清理
 npm run infra:down    # 停止容器（保留数据卷）
+npm run desktop:dev   # 启动 Electron + Vite 热更新开发环境
+npm run desktop:pack  # 生成 Windows 目录包（apps/desktop/release/win-unpacked）
+npm run desktop:dist  # 生成 Windows NSIS 安装程序
+```
