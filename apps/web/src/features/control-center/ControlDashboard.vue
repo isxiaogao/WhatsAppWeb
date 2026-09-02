@@ -3,6 +3,7 @@ import { computed, shallowRef } from 'vue'
 import {
   Activity,
   Bell,
+  AppWindow,
   Boxes,
   Cloud,
   Command,
@@ -21,6 +22,7 @@ import ChatWorkspace from './ChatWorkspace.vue'
 import ConnectAccountDialog from './ConnectAccountDialog.vue'
 import ConversationList from './ConversationList.vue'
 import DesktopConnectionDialog from './DesktopConnectionDialog.vue'
+import BrowserProfilesWorkspace from '@/features/browser-profiles/BrowserProfilesWorkspace.vue'
 import { useControlCenter } from './useControlCenter'
 import { currentControlApiUrl, isDesktopRuntime, saveControlApiUrl } from '@/api/runtime-config'
 
@@ -55,6 +57,10 @@ const {
 } = useControlCenter()
 
 const dialogOpen = shallowRef(false)
+const activeWorkspace = shallowRef<'control' | 'browser'>('control')
+const browserWorkspaceActive = computed(
+  () => isDesktopRuntime && activeWorkspace.value === 'browser',
+)
 const dialogAccountId = shallowRef<string | null>(null)
 const dialogAccount = computed(
   () => accounts.value.find((account) => account.id === dialogAccountId.value) ?? null,
@@ -179,15 +185,27 @@ async function saveDesktopSettings(apiUrl: string): Promise<void> {
         <small>CTRL</small>
       </div>
       <nav class="primary-nav" aria-label="主导航">
-        <button class="nav-button active" title="控制台"><Boxes :size="19" /></button>
+        <button
+          class="nav-button"
+          :class="{ active: activeWorkspace === 'control' }"
+          title="控制台"
+          @click="activeWorkspace = 'control'"
+        ><Boxes :size="19" /></button>
+        <!-- v-if="isDesktopRuntime" -->
+        <button
+          class="nav-button"
+          :class="{ active: browserWorkspaceActive }"
+          title="浏览器档案"
+          @click="activeWorkspace = 'browser'"
+        ><AppWindow :size="19" /></button>
         <button class="nav-button" title="消息"><MessageSquareText :size="19" /></button>
         <button class="nav-button" title="联系人"><UsersRound :size="19" /></button>
         <button class="nav-button" title="节点监控"><Activity :size="19" /></button>
         <button class="nav-button" title="安全策略"><ShieldCheck :size="19" /></button>
       </nav>
       <div class="nav-footer">
+          <!-- v-if="isDesktopRuntime" -->
         <button
-          v-if="isDesktopRuntime"
           class="nav-button"
           title="桌面端连接设置"
           @click="openDesktopSettings"
@@ -196,13 +214,19 @@ async function saveDesktopSettings(apiUrl: string): Promise<void> {
       </div>
     </aside>
 
-    <div class="control-shell">
+    <div
+      class="control-shell"
+      :class="{ 'browser-workspace-active': browserWorkspaceActive }"
+    >
       <header class="top-bar">
         <div class="title-lockup">
           <p>CLOUD SESSION OPERATIONS</p>
           <h1>WhatsApp 云中控</h1>
         </div>
         <div class="top-actions">
+          <span class="runtime-state" :class="{ desktop: isDesktopRuntime }">
+            {{ isDesktopRuntime ? 'DESKTOP' : 'WEB' }}
+          </span>
           <span class="system-state"><i /> CONTROL PLANE HEALTHY</span>
           <span class="clock">CST {{ operatorTime }}</span>
           <button aria-label="通知"><Bell :size="17" /><span class="notification-dot" /></button>
@@ -210,7 +234,7 @@ async function saveDesktopSettings(apiUrl: string): Promise<void> {
         </div>
       </header>
 
-      <section class="status-strip">
+      <section v-if="!browserWorkspaceActive" class="status-strip">
         <div class="metric primary">
           <Cloud :size="17" />
           <span><strong>{{ onlineCount }}</strong> 在线节点</span>
@@ -226,7 +250,7 @@ async function saveDesktopSettings(apiUrl: string): Promise<void> {
         <p class="architecture-note">CONTROL API → EVOLUTION API → BAILEYS</p>
       </section>
 
-      <main class="workspace-grid">
+      <main v-if="!browserWorkspaceActive" class="workspace-grid">
         <AccountRail
           :accounts="accounts"
           :selected-id="selectedAccountId"
@@ -255,6 +279,7 @@ async function saveDesktopSettings(apiUrl: string): Promise<void> {
           @error="showError"
         />
       </main>
+      <BrowserProfilesWorkspace v-else />
     </div>
 
     <ConnectAccountDialog
@@ -314,9 +339,11 @@ async function saveDesktopSettings(apiUrl: string): Promise<void> {
 .nav-button:hover { color: #dce5dd; border-color: #38423a; }.nav-button.active { color: var(--ink); background: var(--acid); }.nav-button.active::after { content: ''; position: absolute; right: -13px; width: 2px; height: 22px; background: var(--acid); }
 .operator-avatar { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #536057; color: #d3ddd5; font-size: 9px; font-weight: 800; }
 .control-shell { height: 100vh; min-width: 0; display: grid; grid-template-rows: 68px 42px minmax(0, 1fr); }
+.control-shell.browser-workspace-active { grid-template-rows: 68px minmax(0, 1fr); }
 .top-bar { padding: 0 20px; display: flex; align-items: center; justify-content: space-between; color: #e9eee9; background: #111713; border-bottom: 1px solid #303932; }
 .title-lockup p { margin: 0 0 2px; color: #7f8c82; font-size: 7px; font-weight: 700; letter-spacing: .22em; }.title-lockup h1 { margin: 0; font-family: "Songti SC", serif; font-size: 20px; font-weight: 600; }
 .top-actions { display: flex; align-items: center; gap: 13px; }.top-actions button { width: 33px; height: 33px; border: 1px solid #3b463d; background: transparent; color: #aeb9b0; display: grid; place-items: center; position: relative; }.top-actions button:hover { color: var(--acid); border-color: #657267; }
+.runtime-state { padding: 4px 7px; border: 1px solid #4b554d; color: #89958c; font-size: 7px; font-weight: 800; letter-spacing: .12em; }.runtime-state.desktop { border-color: #708b69; color: var(--acid); }
 .system-state { display: flex; align-items: center; gap: 7px; color: #8e9b91; font-size: 7px; font-weight: 700; letter-spacing: .12em; }.system-state i { width: 6px; height: 6px; border-radius: 50%; background: var(--acid); box-shadow: 0 0 0 4px rgba(185, 243, 76, .1); }.clock { color: #7e8980; font-family: "Cascadia Code", monospace; font-size: 8px; }.notification-dot { position: absolute; top: 6px; right: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--amber); }
 .status-strip { min-width: 0; display: flex; align-items: center; color: #b2bcb4; background: #182019; border-bottom: 1px solid #303932; overflow: hidden; }
 .metric { height: 100%; padding: 0 17px; display: flex; align-items: center; gap: 8px; border-right: 1px solid #354037; font-size: 8px; letter-spacing: .05em; }.metric strong { margin-right: 3px; color: #f0f3ef; font-size: 12px; }.metric.primary svg { color: var(--acid); }.architecture-note { margin-left: auto; padding: 0 17px; color: #647067; font-family: "Cascadia Code", monospace; font-size: 7px; letter-spacing: .1em; white-space: nowrap; }

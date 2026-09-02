@@ -7,8 +7,9 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "dev": "concurrently -k \"npm run dev -w @cloud-wa/web\" \"wait-on http://127.0.0.1:5273 && cross-env ELECTRON_RENDERER_URL=http://127.0.0.1:5273 electron .\"",
-    "build": "tsc -p tsconfig.json && node scripts/copy-renderer.mjs",
+    "dev": "node scripts/clean-dist.mjs && tsc -p tsconfig.json && concurrently -k \"npm run dev -w @cloud-wa/web\" \"wait-on http://127.0.0.1:5273 && cross-env ELECTRON_RENDERER_URL=http://127.0.0.1:5273 electron .\"",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.json && node scripts/copy-renderer.mjs",
+    "test": "node scripts/clean-dist.mjs && tsc -p tsconfig.json && node --test tests/*.test.mjs",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder --win nsis"
   },
@@ -25,7 +26,12 @@
       "package.json"
     ],
     "asar": true,
-    "asarUnpack": [],
+    "asarUnpack": [
+      "node_modules/patchright*/**",
+      "node_modules/fingerprint-*/**",
+      "node_modules/header-generator/**",
+      "node_modules/generative-bayesian-network/**"
+    ],
     "win": {
       "target": [
         "nsis"
@@ -43,5 +49,10 @@
     "electron": "44.1.1",
     "electron-builder": "^26.15.3",
     "wait-on": "^9.1.0"
+  },
+  "dependencies": {
+    "fingerprint-generator": "2.1.88",
+    "fingerprint-injector": "2.1.88",
+    "patchright": "1.62.2"
   }
 }

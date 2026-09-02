@@ -71,6 +71,12 @@ WA Control Fabric.exe ── HTTPS / SSE ──► Fastify Control API ──►
 
 桌面端使用受限的 `app://` 协议加载本地资源，并启用 sandbox、context isolation 和最小化 preload IPC；Renderer 不拥有 Node.js 或文件系统权限。发布到用户设备前仍应为 Fastify 加入 HTTPS、身份认证、RBAC 与 CORS allowlist。
 
+### 浏览器档案
+
+Electron 左侧导航的“浏览器档案”入口独立于云中控。创建档案时可以设置浏览器名称、责任人、用途、浏览器类型、可选代理地址、打开网站与 IANA 时区；每个档案都在 Electron 用户数据目录下获得自己的持久化浏览器数据目录。点击“打开配置网站”会使用该目录启动本机已安装的 Chrome 或 Edge，登录态、Cookie 和缓存不会与其他档案混用。代理作用于整个档案进程，页面时区通过仅监听本机随机端口的 Chrome DevTools Protocol 在导航前应用。
+
+该能力用于已授权账号的本机会话隔离和人工可见操作，不伪造或轮换浏览器指纹，也不影响 Evolution/Baileys 的现有实例。
+
 ## Webhook 安全
 
 控制服务在每次实例连接时都会重新配置 Webhook，并写入 `x-control-webhook-secret` 请求头。只有与 `EVOLUTION_WEBHOOK_SECRET` 一致的回调才会被接受。生产环境还应使用 HTTPS、反向代理 IP allowlist、密钥托管、RBAC 和审计日志。

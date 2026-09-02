@@ -1,6 +1,9 @@
-import { app, BrowserWindow, ipcMain, net, protocol, session, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol, safeStorage, session, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { BrowserProfileManager } from './browser-profile-manager.js'
+import { BrowserProfileStore, type BrowserProfileInput } from './browser-profile-store.js'
+import { ChromiumRuntime } from './chromium-runtime.js'
 import { loadDesktopConfig, saveDesktopConfig, type DesktopConfig } from './config.js'
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url))
@@ -16,6 +19,8 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let desktopConfig: DesktopConfig
+let browserProfiles: BrowserProfileManager
+let quitting = false
 
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -26,7 +31,7 @@ function createWindow(): BrowserWindow {
     backgroundColor: '#0b100d',
     show: false,
     webPreferences: {
-      preload: path.join(currentDirectory, 'preload.js'),
+      preload: path.join(currentDirectory, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -72,6 +77,17 @@ function rendererFilePath(requestUrl: string): string | null {
 
 app.whenReady().then(async () => {
   desktopConfig = await loadDesktopConfig(app.getPath('userData'))
+  const profileStore = new BrowserProfileStore(app.getPath('userData'), {
+    encrypt(value) {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows 安全存储当前不可用')
+      return safeStorage.encryptString(value).toString('base64')
+    },
+    decrypt(value) {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows 安全存储当前不可用')
+      return safeStorage.decryptString(Buffer.from(value, 'base64'))
+    },
+  })
+  browserProfiles = new BrowserProfileManager(profileStore, new ChromiumRuntime())
 
   protocol.handle('app', (request) => {
     const filePath = rendererFilePath(request.url)
@@ -98,12 +114,56 @@ app.whenReady().then(async () => {
     })
   })
 
-  ipcMain.handle('desktop:config:get', () => desktopConfig)
-  ipcMain.handle('desktop:config:save', async (_event, input: DesktopConfig) => {
+  ipcMain.handle('desktop:config:get', (event) => {
+    assertTrustedIpcSender(event.sender.getURL())
+    return desktopConfig
+  })
+  ipcMain.handle('desktop:config:save', async (event, input: DesktopConfig) => {
+    assertTrustedIpcSender(event.sender.getURL())
     desktopConfig = await saveDesktopConfig(app.getPath('userData'), input)
     return desktopConfig
   })
-  ipcMain.handle('desktop:app:version', () => app.getVersion())
+  ipcMain.handle('desktop:app:version', (event) => {
+    assertTrustedIpcSender(event.sender.getURL())
+    return app.getVersion()
+  })
+  ipcMain.handle('desktop:browser-profiles:list', async (event) => {
+    assertTrustedIpcSender(event.sender.getURL())
+    return browserProfiles.list()
+  })
+  ipcMain.handle(
+    'desktop:browser-profiles:create',
+    async (event, input: BrowserProfileInput) => {
+      assertTrustedIpcSender(event.sender.getURL())
+      return browserProfiles.create(input)
+    },
+  )
+  ipcMain.handle(
+    'desktop:browser-profiles:update',
+    async (event, profileId: string, input: BrowserProfileInput) => {
+      assertTrustedIpcSender(event.sender.getURL())
+      return browserProfiles.update(profileId, input)
+    },
+  )
+  ipcMain.handle('desktop:browser-profiles:delete', async (event, profileId: string) => {
+    assertTrustedIpcSender(event.sender.getURL())
+    await browserProfiles.delete(profileId)
+  })
+  ipcMain.handle('desktop:browser-profiles:start', async (event, profileId: string) => {
+    assertTrustedIpcSender(event.sender.getURL())
+    if (typeof profileId !== 'string') throw new Error('浏览器档案标识无效')
+    return browserProfiles.start(profileId)
+  })
+  ipcMain.handle('desktop:browser-profiles:stop', async (event, profileId: string) => {
+    assertTrustedIpcSender(event.sender.getURL())
+    if (typeof profileId !== 'string') throw new Error('浏览器档案标识无效')
+    return browserProfiles.stop(profileId)
+  })
+  ipcMain.handle('desktop:browser-profiles:status', (event, profileId: string) => {
+    assertTrustedIpcSender(event.sender.getURL())
+    if (typeof profileId !== 'string') throw new Error('浏览器档案标识无效')
+    return browserProfiles.status(profileId)
+  })
 
   createWindow()
 
@@ -112,6 +172,20 @@ app.whenReady().then(async () => {
   })
 })
 
+function assertTrustedIpcSender(url: string): void {
+  if (url.startsWith('app://renderer/') || (developmentServerUrl && url.startsWith(developmentServerUrl))) {
+    return
+  }
+  throw new Error('不受信任的桌面端请求来源')
+}
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', (event) => {
+  if (quitting || !browserProfiles) return
+  event.preventDefault()
+  quitting = true
+  void browserProfiles.shutdown().finally(() => app.quit())
 })

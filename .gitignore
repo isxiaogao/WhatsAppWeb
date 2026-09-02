@@ -12,3 +12,4 @@ apps/desktop/release/
 .electron-cache/
 .electron-builder-cache/
 .DS_Store
+.cache/*
