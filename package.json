@@ -1,0 +1,27 @@
+{
+  "name": "cloud-wa-control-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c yellow,cyan \"npm run dev -w apps/server\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w apps/server && npm run build -w apps/web",
+    "test": "npm run test -w apps/server",
+    "start": "npm run start -w apps/server",
+    "infra:up": "docker compose -f infra/evolution/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/evolution/docker-compose.yml down",
+    "infra:status": "docker compose -f infra/evolution/docker-compose.yml ps",
+    "infra:logs": "docker compose -f infra/evolution/docker-compose.yml logs -f evolution-api",
+    "infra:smoke": "node scripts/evolution-health.mjs",
+    "media:smoke": "node scripts/media-storage-smoke.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

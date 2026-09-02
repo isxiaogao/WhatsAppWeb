@@ -1,0 +1,46 @@
+:root {
+  font-family: "Bahnschrift", "DIN Alternate", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  color: #172019;
+  background: #0b100d;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #101712;
+  --ink-soft: #26322a;
+  --paper: #f1eee6;
+  --paper-deep: #e6e2d8;
+  --paper-bright: #faf8f2;
+  --acid: #b9f34c;
+  --acid-deep: #91c82c;
+  --amber: #efb34d;
+  --blue: #8ab7e9;
+  --rose: #ef9ba0;
+  --mint: #79c9a4;
+  --line: rgba(16, 23, 18, 0.13);
+  --muted: #6c746e;
+  --danger: #d65656;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app { min-width: 320px; min-height: 100%; margin: 0; }
+
+body { min-height: 100vh; overflow: hidden; }
+
+button, input, textarea { font: inherit; }
+
+button { cursor: pointer; }
+
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--acid-deep);
+  outline-offset: 2px;
+}
+
+::selection { color: var(--ink); background: var(--acid); }
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(31, 43, 34, 0.24); }
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+}
