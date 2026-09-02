@@ -1,0 +1,37 @@
+server:
+  port: ${PORT:4100}
+  address: ${HOST:0.0.0.0}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: ${WA_CONTROL_MAX_MULTIPART_FILE_SIZE:64MB}
+      max-request-size: ${WA_CONTROL_MAX_MULTIPART_REQUEST_SIZE:66MB}
+
+wa-control:
+  state:
+    path: ${CONTROL_STATE_PATH:runtime/control-center.json}
+  evolution:
+    api-url: ${EVOLUTION_API_URL:http://127.0.0.1:8080}
+    api-key: ${EVOLUTION_API_KEY:local-mvp-evolution-key}
+    public-webhook-url: ${EVOLUTION_PUBLIC_WEBHOOK_URL:http://host.docker.internal:4100}
+    webhook-secret: ${EVOLUTION_WEBHOOK_SECRET:local-mvp-webhook-secret}
+    poll-interval: ${EVOLUTION_POLL_INTERVAL:3s}
+    connect-retry-min-delay: ${EVOLUTION_CONNECT_RETRY_MIN_DELAY:15s}
+    auto-resume: ${EVOLUTION_AUTO_RESUME:true}
+  media:
+    s3:
+      endpoint: ${MEDIA_S3_ENDPOINT:http://127.0.0.1:9000}
+      region: ${MEDIA_S3_REGION:us-east-1}
+      bucket: ${MEDIA_S3_BUCKET:wa-control-media}
+      access-key: ${MEDIA_S3_ACCESS_KEY:wa-control-media}
+      secret-key: ${MEDIA_S3_SECRET_KEY:local-mvp-media-secret}
+    upload:
+      max-image-bytes: ${MEDIA_MAX_IMAGE_BYTES:10485760}
+      max-video-bytes: ${MEDIA_MAX_VIDEO_BYTES:67108864}
+      max-avatar-bytes: ${MEDIA_MAX_AVATAR_BYTES:5242880}
+  logging:
+    request:
+      enabled: ${REQUEST_LOG_ENABLED:true}
+      include-body: ${REQUEST_LOG_INCLUDE_BODY:true}
+      max-body-length: ${REQUEST_LOG_MAX_BODY_LENGTH:2048}
