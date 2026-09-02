@@ -8,16 +8,36 @@ const timeout = setTimeout(() => {
 }, 15_000)
 
 app.whenReady().then(async () => {
+  const profile = (input) => ({
+    id: 'electron-regression-profile',
+    ...input,
+    proxyUrl: input.proxyUrl || null,
+    proxyUsername: input.proxyUsername || null,
+    hasProxyPassword: Boolean(input.proxyPassword),
+    fingerprint: {
+      userAgent: 'Mozilla/5.0 Chrome/147.0.0.0',
+      platform: 'Win32',
+      language: input.locale,
+      screen: '1920 × 1080 @ 1',
+      hardwareConcurrency: 8,
+      webgl: 'Google Inc. / ANGLE',
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastOpenedAt: null,
+    runtime: { status: 'STOPPED', cdpEndpoint: null, startedAt: null, lastError: null },
+  })
   ipcMain.handle('desktop:config:get', () => ({ controlApiUrl: 'http://127.0.0.1:4100' }))
   ipcMain.handle('desktop:config:save', (_event, input) => input)
   ipcMain.handle('desktop:app:version', () => 'test')
   ipcMain.handle('desktop:browser-profiles:list', () => [])
-  ipcMain.handle('desktop:browser-profiles:create', (_event, input) => ({
-    id: 'electron-regression-profile',
-    ...input,
-    proxyUrl: input.proxyUrl || null,
-    createdAt: new Date().toISOString(),
-    lastOpenedAt: null,
+  ipcMain.handle('desktop:browser-profiles:create', (_event, input) => profile(input))
+  ipcMain.handle('desktop:browser-profiles:update', (_event, _profileId, input) => profile(input))
+  ipcMain.handle('desktop:browser-profiles:delete', () => undefined)
+  ipcMain.handle('desktop:browser-profiles:start', (_event, _profileId) => profile({}))
+  ipcMain.handle('desktop:browser-profiles:stop', (_event, _profileId) => profile({}))
+  ipcMain.handle('desktop:browser-profiles:status', () => ({
+    status: 'STOPPED', cdpEndpoint: null, startedAt: null, lastError: null,
   }))
 
   const window = new BrowserWindow({
@@ -73,19 +93,31 @@ app.whenReady().then(async () => {
     button: 'left',
     clickCount: 1,
   })
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  const result = await window.webContents.executeJavaScript(`({
-    runtime: document.querySelector('.runtime-state')?.textContent?.trim(),
-    buttonActive: document.querySelector('button[title="浏览器档案"]')?.classList.contains('active') ?? false,
-    browserHeading: document.querySelector('.browser-header h2')?.textContent?.trim() ?? null,
-    loading: document.querySelector('.list-heading span')?.textContent?.trim() ?? null,
-  })`)
+  const result = await window.webContents.executeJavaScript(`
+    (async () => {
+      const deadline = Date.now() + 5_000
+      while (Date.now() < deadline) {
+        const heading = document.querySelector('.browser-header h2')?.textContent?.trim() ?? null
+        const loading = document.querySelector('.list-heading span')?.textContent?.trim() ?? null
+        if (heading === '浏览器档案' && loading === null) break
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      }
+      return {
+        runtime: document.querySelector('.runtime-state')?.textContent?.trim(),
+        buttonActive: document.querySelector('button[title="浏览器档案"]')?.classList.contains('active') ?? false,
+        browserHeading: document.querySelector('.browser-header h2')?.textContent?.trim() ?? null,
+        loading: document.querySelector('.list-heading span')?.textContent?.trim() ?? null,
+        error: document.querySelector('[role="alert"]')?.textContent?.trim() ?? null,
+      }
+    })()
+  `)
 
   assert.deepEqual(result, {
     runtime: 'DESKTOP',
     buttonActive: true,
     browserHeading: '浏览器档案',
     loading: null,
+    error: null,
   })
   assert.deepEqual(consoleErrors, [])
   clearTimeout(timeout)
@@ -94,5 +126,6 @@ app.whenReady().then(async () => {
 }).catch((error) => {
   clearTimeout(timeout)
   console.error(error)
+  for (const window of BrowserWindow.getAllWindows()) window.destroy()
   app.exit(1)
 })

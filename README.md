@@ -73,9 +73,11 @@ WA Control Fabric.exe ── HTTPS / SSE ──► Fastify Control API ──►
 
 ### 浏览器档案
 
-Electron 左侧导航的“浏览器档案”入口独立于云中控。创建档案时可以设置浏览器名称、责任人、用途、浏览器类型、可选代理地址、打开网站与 IANA 时区；每个档案都在 Electron 用户数据目录下获得自己的持久化浏览器数据目录。点击“打开配置网站”会使用该目录启动本机已安装的 Chrome 或 Edge，登录态、Cookie 和缓存不会与其他档案混用。代理作用于整个档案进程，页面时区通过仅监听本机随机端口的 Chrome DevTools Protocol 在导航前应用。
+Electron 左侧导航的“浏览器档案”入口独立于云中控和 Java 服务。桌面端使用本地 Node.js 运行时、Patchright 与系统已安装的 Chrome/Edge 启动持久化 Chromium Context；每个档案拥有独立数据目录，所以 Cookie、缓存、LocalStorage 和登录状态互不混用。界面支持创建、编辑、删除、启动、停止与状态轮询，并可设置档案名称、责任人、用途、浏览器类型、代理地址及认证、打开网站、IANA 时区和语言。
 
-该能力用于已授权账号的本机会话隔离和人工可见操作，不伪造或轮换浏览器指纹，也不影响 Evolution/Baileys 的现有实例。
+“增强指纹”模式会在创建档案时生成并持久化一组固定的 UA、屏幕、Canvas/WebGL、语言和设备参数，每次启动复用；“浏览器原生”模式则保留系统 Chromium 的原生指纹行为。代理密码通过 Electron `safeStorage` 加密后落盘。运行中的档案会显示仅监听 `127.0.0.1` 的临时 CDP 地址，可供本机自动化程序连接。
+
+该实现适合已授权账号的会话隔离、代理绑定和可见自动化，但注入式指纹不等同于定制 Chromium 内核，也不承诺对所有风控系统不可检测。浏览器运行完全位于 Electron 客户端，不改变云中控 Java 服务或 Evolution/Baileys 实例。
 
 ## Webhook 安全
 
