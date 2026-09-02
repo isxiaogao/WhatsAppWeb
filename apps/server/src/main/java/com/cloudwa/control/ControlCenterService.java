@@ -277,7 +277,8 @@ public class ControlCenterService {
     }
 
     public void handleEvolutionWebhook(String accountId, Map<String, Object> payload) {
-        provider.handleWebhook(resolveWebhookAccount(accountId, payload), payload);
+        Account account = resolveWebhookAccount(accountId, payload);
+        if (account != null) provider.handleWebhook(account, payload);
     }
 
     public ProviderHealth getProviderHealth() {
@@ -476,7 +477,7 @@ public class ControlCenterService {
                 .filter(account -> account.evolution() != null)
                 .filter(account -> identities.contains(account.evolution().instanceId()) || identities.contains(account.evolution().instanceName()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("账号不存在"));
+                .orElse(null);
     }
 
     private static Set<String> webhookIdentities(Map<String, Object> payload) {

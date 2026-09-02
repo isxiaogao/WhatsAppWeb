@@ -145,6 +145,15 @@ class ControlApiContractTest {
       .andExpect(jsonPath("$.items[0].accountId").value(account.id()));
   }
 
+  @Test
+  void ignoresWebhookForDeletedOrUnknownEvolutionInstance() throws Exception {
+    mvc.perform(post("/api/webhooks/evolution/deleted-account-id")
+        .header("x-control-webhook-secret", "local-mvp-webhook-secret")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"event\":\"qrcode.updated\",\"instance\":\"wa_deletedaccountid\",\"data\":{\"instance\":\"wa_deletedaccountid\"}}"))
+      .andExpect(status().isNoContent());
+  }
+
   private static byte[] samplePng() {
     return Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2nGQAAAAASUVORK5CYII=");
   }
