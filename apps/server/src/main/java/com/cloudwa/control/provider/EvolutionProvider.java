@@ -231,7 +231,18 @@ public class EvolutionProvider implements WhatsAppProvider {
                     .findFirst()
                     .map(item -> first(string(item, "ownerJid"), string(item, "number"), string(value(item, "instance"), "ownerJid")))
                     .filter(Objects::nonNull)
-                    .ifPresent(owner -> session.sink.onIdentity(session.account.id(), displayJid(owner)));
+                    .ifPresent(owner -> {
+                        session.sink.onIdentity(session.account.id(), displayJid(owner));
+                        syncProfilePicture(session, owner);
+                    });
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    private void syncProfilePicture(Session session, String owner) {
+        try {
+            String avatarUrl = extractProfilePictureUrl(client.fetchProfilePictureUrl(session.account.evolution().instanceName(), owner));
+            if (avatarUrl != null) session.sink.onAvatarUrl(session.account.id(), avatarUrl);
         } catch (RuntimeException ignored) {
         }
     }
@@ -374,6 +385,10 @@ public class EvolutionProvider implements WhatsAppProvider {
 
     private static String extractMessageId(Object input) {
         return first(string(value(input, "key"), "id"), string(value(value(input, "message"), "key"), "id"), string(input, "id"));
+    }
+
+    private static String extractProfilePictureUrl(Object input) {
+        return first(string(input, "profilePictureUrl"), string(value(input, "response"), "profilePictureUrl"));
     }
 
     private static String instanceNameOf(Object input) {

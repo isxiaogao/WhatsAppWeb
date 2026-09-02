@@ -68,6 +68,10 @@ public class EvolutionClient {
         return request("POST", "/chat/getBase64FromMediaMessage/" + enc(instanceName), Map.of("message", message));
     }
 
+    public Object fetchProfilePictureUrl(String instanceName, String number) {
+        return request("POST", "/chat/fetchProfilePictureUrl/" + enc(instanceName), Map.of("number", number));
+    }
+
     public Object setWebhook(String instanceName, String url, String secret) {
         return request("POST", "/webhook/set/" + enc(instanceName), Map.of("webhook", Map.of(
                 "enabled", true, "url", url,

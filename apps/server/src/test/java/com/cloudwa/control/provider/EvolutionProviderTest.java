@@ -58,4 +58,15 @@ class EvolutionProviderTest {
 
     assertEquals(null, result);
   }
+
+  @Test
+  void extractProfilePictureUrlAcceptsDirectAndWrappedEvolutionResponses() throws Exception {
+    Method method = EvolutionProvider.class.getDeclaredMethod("extractProfilePictureUrl", Object.class);
+    method.setAccessible(true);
+
+    assertEquals("https://pps.whatsapp.net/direct.jpg",
+      method.invoke(null, Map.of("profilePictureUrl", "https://pps.whatsapp.net/direct.jpg")));
+    assertEquals("https://pps.whatsapp.net/wrapped.jpg",
+      method.invoke(null, Map.of("response", Map.of("profilePictureUrl", "https://pps.whatsapp.net/wrapped.jpg"))));
+  }
 }

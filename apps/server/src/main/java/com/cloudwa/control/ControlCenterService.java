@@ -46,6 +46,11 @@ public class ControlCenterService {
         }
 
         @Override
+        public void onAvatarUrl(String accountId, String avatarUrl) {
+            syncAccountAvatarUrl(accountId, avatarUrl);
+        }
+
+        @Override
         public void onInstance(String accountId, String instanceId) {
             Account account = requireAccount(accountId);
             EvolutionInstance evolution = new EvolutionInstance(account.evolution().instanceName(), instanceId, "WHATSAPP-BAILEYS");
@@ -319,6 +324,24 @@ public class ControlCenterService {
             persist();
         }
         return updated;
+    }
+
+    private void syncAccountAvatarUrl(String accountId, String avatarUrl) {
+        if (avatarUrl == null || avatarUrl.isBlank()) return;
+        Account account = requireAccount(accountId);
+        if (avatarUrl.equals(account.avatarUrl())) return;
+        MediaAsset previous = account.avatarMediaId() == null ? null : mediaAssets.get(account.avatarMediaId());
+        Account updated = copyAccount(account, account.phone(), account.status(), account.lastSeenAt(), account.qrDataUrl(),
+                avatarUrl, null, account.error(), account.evolution());
+        saveAccount(updated);
+        if (previous != null) {
+            mediaAssets.remove(previous.id());
+            try {
+                mediaStorage.delete(previous.storageKey());
+            } catch (RuntimeException ignored) {
+            }
+            persist();
+        }
     }
 
     private synchronized void persist() {

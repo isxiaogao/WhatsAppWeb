@@ -47,6 +47,24 @@ class ControlCenterServiceTest {
       .containsExactly(MessageStatus.DELIVERED);
   }
 
+  @Test
+  void providerAvatarUrlUpdatesAccountWithoutLocalUpload() {
+    RecordingProvider provider = new RecordingProvider("provider-message-1");
+    ControlCenterService service = new ControlCenterService(provider, new MemoryStateStore(), new MemoryMediaStorage(), ControlApiContractTest.testProperties());
+    Account account = service.createAccount(new AccountCreateRequest("avatar sync"));
+    service.connectAccount(account.id());
+
+    provider.sink.onAvatarUrl(account.id(), "https://pps.whatsapp.net/profile.jpg");
+
+    assertThat(service.listAccounts())
+      .filteredOn(item -> item.id().equals(account.id()))
+      .singleElement()
+      .satisfies(item -> {
+        assertThat(item.avatarUrl()).isEqualTo("https://pps.whatsapp.net/profile.jpg");
+        assertThat(item.avatarMediaId()).isNull();
+      });
+  }
+
   static class RecordingProvider implements WhatsAppProvider {
     private final String providerMessageId;
     ProviderSink sink;
