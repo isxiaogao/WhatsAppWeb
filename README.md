@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # WA Control Fabric — Evolution API 云中控 MVP
 
 这是一个真实可连接的 WhatsApp 云中控 MVP：Vue 3 操作台通过 Fastify 控制服务管理 Evolution API 的独立 `WHATSAPP-BAILEYS` 实例，支持实例创建、二维码登录、在线状态、会话同步、文本/图片/视频收发、账号头像管理、消息回执、SSE 实时刷新和重启恢复。工程没有模拟账号、模拟消息或浏览器注入代码。
@@ -100,8 +99,3 @@ npm run infra:logs    # 查看 Evolution 日志
 npm run infra:smoke   # 验证 Evolution 健康状态
 npm run media:smoke   # 验证 MinIO 上传、读取、签名下载和清理
 npm run infra:down    # 停止容器（保留数据卷）
-```
-=======
-# WhatsAppWeb
-WhatsApp Web
->>>>>>> 64761c2fd9cc1dbaf3040c5c7c48ddbea63831e7
